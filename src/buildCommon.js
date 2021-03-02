@@ -5,20 +5,24 @@
  * different kinds of domTree nodes in a consistent manner.
  */
 
-import {SymbolNode, Anchor, Span, PathNode, SvgNode, createClass} from "./domTree";
-import {getCharacterMetrics} from "./fontMetrics";
-import symbols, {ligatures} from "./symbols";
-import {wideCharacterFont} from "./wide-character";
-import {calculateSize} from "./units";
-import {DocumentFragment} from "./tree";
-
-import type Options from "./Options";
-import type {ParseNode} from "./parseNode";
+import type {
+    CssStyle,
+    documentFragment as HtmlDocumentFragment,
+    DomSpan,
+    HtmlDomNode,
+    SvgSpan,
+} from "./domTree";
+import {Anchor, createClass, PathNode, Span, SvgNode, SymbolNode} from "./domTree";
 import type {CharacterMetrics} from "./fontMetrics";
-import type {FontVariant, Mode} from "./types";
-import type {documentFragment as HtmlDocumentFragment} from "./domTree";
-import type {HtmlDomNode, DomSpan, SvgSpan, CssStyle} from "./domTree";
+import {getCharacterMetrics} from "./fontMetrics";
+import type Options from "./Options";
+import symbols, {ligatures} from "./symbols";
+import {DocumentFragment} from "./tree";
+import type {Mode} from "./types";
 import type {Measurement} from "./units";
+import {calculateSize} from "./units";
+import {wideCharacterFont} from "./wide-character";
+
 
 /**
  * Looks up the given symbol in fontMetrics, after applying any symbol
@@ -29,7 +33,7 @@ const lookupSymbol = function(
     // TODO(#963): Use a union type for this.
     fontName: string,
     mode: Mode,
-): {value: string, metrics: ?CharacterMetrics} {
+): { value: string, metrics: ?CharacterMetrics } {
     // Replace the value with its replaced value from symbol.js
     if (symbols[mode][value] && symbols[mode][value].replace) {
         value = symbols[mode][value].replace;
@@ -109,7 +113,7 @@ const mathsym = function(
     // table for text, as well as a special case for boldsymbol because it
     // can be used for bold + and -
     if (options.font === "boldsymbol" &&
-            lookupSymbol(value, "Main-Bold", mode).metrics) {
+        lookupSymbol(value, "Main-Bold", mode).metrics) {
         return makeSymbol(value, "Main-Bold", mode, options,
             classes.concat(["mathbf"]));
     } else if (value === "\\" || symbols[mode][value].font === "main") {
@@ -152,10 +156,10 @@ const boldsymbol = function(
 /**
  * Makes either a mathord or textord in the correct font and color.
  */
-const makeOrd = function<NODETYPE: "spacing" | "mathord" | "textord">(
+const makeOrd = function <NODETYPE: "spacing" | "mathord" | "textord" >(
     group: ParseNode<NODETYPE>,
-    options: Options,
-    type: "mathord" | "textord",
+        options: Options,
+            type: "mathord" | "textord",
 ): HtmlDocumentFragment | SymbolNode {
     const mode = group.mode;
     const text = group.text;
@@ -182,7 +186,7 @@ const makeOrd = function<NODETYPE: "spacing" | "mathord" | "textord">(
             fontClasses = [fontOrFamily];
         } else {
             fontName = retrieveTextFontName(fontOrFamily, options.fontWeight,
-                                            options.fontShape);
+                options.fontShape);
             fontClasses = [fontOrFamily, options.fontWeight, options.fontShape];
         }
 
@@ -190,12 +194,12 @@ const makeOrd = function<NODETYPE: "spacing" | "mathord" | "textord">(
             return makeSymbol(text, fontName, mode, options,
                 classes.concat(fontClasses));
         } else if (ligatures.hasOwnProperty(text) &&
-                   fontName.substr(0, 10) === "Typewriter") {
+            fontName.substr(0, 10) === "Typewriter") {
             // Deconstruct ligatures in monospace fonts (\texttt, \tt).
             const parts = [];
             for (let i = 0; i < text.length; i++) {
                 parts.push(makeSymbol(text[i], fontName, mode, options,
-                                      classes.concat(fontClasses)));
+                    classes.concat(fontClasses)));
             }
             return makeFragment(parts);
         }
@@ -209,19 +213,19 @@ const makeOrd = function<NODETYPE: "spacing" | "mathord" | "textord">(
         const font = symbols[mode][text] && symbols[mode][text].font;
         if (font === "ams") {
             const fontName = retrieveTextFontName("amsrm", options.fontWeight,
-                  options.fontShape);
+                options.fontShape);
             return makeSymbol(
                 text, fontName, mode, options,
                 classes.concat("amsrm", options.fontWeight, options.fontShape));
         } else if (font === "main" || !font) {
             const fontName = retrieveTextFontName("textrm", options.fontWeight,
-                  options.fontShape);
+                options.fontShape);
             return makeSymbol(
                 text, fontName, mode, options,
                 classes.concat(options.fontWeight, options.fontShape));
         } else { // fonts added by plugins
             const fontName = retrieveTextFontName(font, options.fontWeight,
-                  options.fontShape);
+                options.fontShape);
             // We add font name as a css class
             return makeSymbol(
                 text, fontName, mode, options,
@@ -417,20 +421,20 @@ const wrapFragment = function(
 // These are exact object types to catch typos in the names of the optional fields.
 export type VListElem = {|
     type: "elem",
-    elem: HtmlDomNode,
-    marginLeft?: ?string,
-    marginRight?: string,
-    wrapperClasses?: string[],
-    wrapperStyle?: CssStyle,
+        elem: HtmlDomNode,
+            marginLeft ?: ? string,
+            marginRight ?: string,
+            wrapperClasses ?: string[],
+            wrapperStyle ?: CssStyle,
 |};
 type VListElemAndShift = {|
     type: "elem",
-    elem: HtmlDomNode,
-    shift: number,
-    marginLeft?: ?string,
-    marginRight?: string,
-    wrapperClasses?: string[],
-    wrapperStyle?: CssStyle,
+        elem: HtmlDomNode,
+            shift: number,
+                marginLeft ?: ? string,
+                marginRight ?: string,
+                wrapperClasses ?: string[],
+                wrapperStyle ?: CssStyle,
 |};
 type VListKern = {| type: "kern", size: number |};
 
@@ -441,7 +445,7 @@ type VListChild = VListElem | VListKern;
 type VListParam = {|
     // Each child contains how much it should be shifted downward.
     positionType: "individualShift",
-    children: VListElemAndShift[],
+        children: VListElemAndShift[],
 |} | {|
     // "top": The positionData specifies the topmost point of the vlist (note this
     //        is expected to be a height, so positive values move up).
@@ -451,14 +455,14 @@ type VListParam = {|
     //          away from the baseline of the first child which MUST be an
     //          "elem". Positive values move downwards.
     positionType: "top" | "bottom" | "shift",
-    positionData: number,
-    children: VListChild[],
+        positionData: number,
+            children: VListChild[],
 |} | {|
     // The vlist is positioned so that its baseline is aligned with the baseline
     // of the first child which MUST be an "elem". This is equivalent to "shift"
     // with positionData=0.
     positionType: "firstBaseline",
-    children: VListChild[],
+        children: VListChild[],
 |};
 
 
@@ -483,7 +487,7 @@ const getVListChildrenAndDepth = function(params: VListParam): {
                 oldChildren[i].elem.depth;
             const size = diff -
                 (oldChildren[i - 1].elem.height +
-                 oldChildren[i - 1].elem.depth);
+                    oldChildren[i - 1].elem.depth);
 
             currPos = currPos + diff;
 
@@ -674,7 +678,7 @@ const retrieveTextFontName = function(
  * - fontName: the "style" parameter to fontMetrics.getCharacterMetrics
  */
 // A map between tex font commands an MathML mathvariant attribute values
-const fontMap: {[string]: {| variant: FontVariant, fontName: string |}} = {
+const fontMap: { [string]: {| variant: FontVariant, fontName: string |}} = {
     // styles
     "mathbf": {
         variant: "bold",
@@ -731,7 +735,7 @@ const fontMap: {[string]: {| variant: FontVariant, fontName: string |}} = {
 const svgData: {
     [string]: ([string, number, number])
 } = {
-     //   path, width, height
+    //   path, width, height
     vec: ["vec", 0.471, 0.714],                // values from the font glyph
     oiintSize1: ["oiintSize1", 0.957, 0.499],  // oval to overlay the integrand
     oiintSize2: ["oiintSize2", 1.472, 0.659],
@@ -747,7 +751,7 @@ const staticSvg = function(value: string, options: Options): SvgSpan {
         "width": width + "em",
         "height": height + "em",
         // Override CSS rule `.katex svg { width: 100% }`
-        "style": "width:" + width + "em",
+        "style": "width: 100%",
         "viewBox": "0 0 " + 1000 * width + " " + 1000 * height,
         "preserveAspectRatio": "xMinYMin",
     });

@@ -4,11 +4,11 @@
  * TODO(emily): Remove this
  */
 
-import Parser from "./Parser";
 import ParseError from "./ParseError";
-
-import type Settings from "./Settings";
 import type {AnyParseNode} from "./parseNode";
+import Parser from "./Parser";
+import type Settings from "./Settings";
+
 
 /**
  * Parses an expression using a Parser, then returns the parsed result.

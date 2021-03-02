@@ -11,13 +11,13 @@
  * TODO: refactor `span` and `anchor` into common superclass when
  * target environments support class inheritance
  */
+import type Options from "./Options";
+import {path} from "./svgGeometry";
+import type {VirtualNode} from "./tree";
+import {DocumentFragment} from "./tree";
 import {scriptFromCodepoint} from "./unicodeScripts";
 import utils from "./utils";
-import {path} from "./svgGeometry";
-import type Options from "./Options";
-import {DocumentFragment} from "./tree";
 
-import type {VirtualNode} from "./tree";
 
 
 /**
@@ -54,7 +54,11 @@ const initNode = function(
  * Convert into an HTML node
  */
 const toNode = function(tagName: string): HTMLElement {
-    const node = document.createElement(tagName);
+    const node = {
+        name: tagName,
+        children: [],
+        style: {},
+    };
 
     // Apply the class
     node.className = createClass(this.classes);
@@ -70,13 +74,13 @@ const toNode = function(tagName: string): HTMLElement {
     // Apply attributes
     for (const attr in this.attributes) {
         if (this.attributes.hasOwnProperty(attr)) {
-            node.setAttribute(attr, this.attributes[attr]);
+            node[attr] = this.attributes[attr];
         }
     }
 
     // Append the children, also as HTML nodes
     for (let i = 0; i < this.children.length; i++) {
-        node.appendChild(this.children[i].toNode());
+        node.children.push(this.children[i].toNode());
     }
 
     return node;
@@ -85,13 +89,16 @@ const toNode = function(tagName: string): HTMLElement {
 /**
  * Convert into an HTML markup string
  */
-const toMarkup = function(tagName: string): string {
+const toMarkup = function(tagName: string, className: string = ""): string {
     let markup = `<${tagName}`;
-
+    let currentClasses = className;
     // Add the class
     if (this.classes.length) {
-        markup += ` class="${utils.escape(createClass(this.classes))}"`;
+        const escapeClass = utils.escape(createClass(this.classes));
+        currentClasses += `_${escapeClass.replace(" ", "_")}`;
+        className += currentClasses + ` ${escapeClass}`;
     }
+    markup += ` class="${tagName} ${className}"`;
 
     let styles = "";
 
@@ -117,7 +124,7 @@ const toMarkup = function(tagName: string): string {
 
     // Add the markup of the children, also as markup
     for (let i = 0; i < this.children.length; i++) {
-        markup += this.children[i].toMarkup();
+        markup += this.children[i].toMarkup(currentClasses);
     }
 
     markup += `</${tagName}>`;
@@ -187,7 +194,7 @@ export type documentFragment = DocumentFragment<HtmlDomNode>;
  */
 export class Span<ChildType: VirtualNode> implements HtmlDomNode {
     children: ChildType[];
-    attributes: {[string]: string};
+    attributes: { [string]: string };
     classes: string[];
     height: number;
     depth: number;
@@ -222,8 +229,8 @@ export class Span<ChildType: VirtualNode> implements HtmlDomNode {
         return toNode.call(this, "span");
     }
 
-    toMarkup(): string {
-        return toMarkup.call(this, "span");
+    toMarkup(currentClasses: string): string {
+        return toMarkup.call(this, "span", currentClasses);
     }
 }
 
@@ -233,7 +240,7 @@ export class Span<ChildType: VirtualNode> implements HtmlDomNode {
  */
 export class Anchor implements HtmlDomNode {
     children: HtmlDomNode[];
-    attributes: {[string]: string};
+    attributes: { [string]: string };
     classes: string[];
     height: number;
     depth: number;
@@ -263,8 +270,8 @@ export class Anchor implements HtmlDomNode {
         return toNode.call(this, "a");
     }
 
-    toMarkup(): string {
-        return toMarkup.call(this, "a");
+    toMarkup(currentClasses: string): string {
+        return toMarkup.call(this, "a", currentClasses);
     }
 }
 
@@ -296,7 +303,10 @@ export class Img implements VirtualNode {
     }
 
     toNode(): Node {
-        const node = document.createElement("img");
+        const node = {
+            name: "image",
+            style: {},
+        };
         node.src = this.src;
         node.alt = this.alt;
         node.className = "mord";
@@ -313,7 +323,6 @@ export class Img implements VirtualNode {
     }
 
     toMarkup(): string {
-        let markup = `<img  src='${this.src} 'alt='${this.alt}' `;
 
         // Add the styles, after hyphenation
         let styles = "";
@@ -322,12 +331,9 @@ export class Img implements VirtualNode {
                 styles += `${utils.hyphenate(style)}:${this.style[style]};`;
             }
         }
-        if (styles) {
-            markup += ` style="${utils.escape(styles)}"`;
-        }
 
-        markup += "'/>";
-        return markup;
+        // eslint-disable-next-line max-len
+        return `<img src='${this.src} style="${utils.escape(styles)}" alt='${this.alt}'/>`;
     }
 }
 
@@ -401,29 +407,45 @@ export class SymbolNode implements HtmlDomNode {
      * created if it is needed.
      */
     toNode(): Node {
-        const node = document.createTextNode(this.text);
+        const node = {
+            name: "text",
+            type: "text",
+            style: {},
+            children: [],
+        };
         let span = null;
 
         if (this.italic > 0) {
-            span = document.createElement("span");
+            span = {
+                name: "span",
+                children: [],
+                style: {},
+            };
             span.style.marginRight = this.italic + "em";
         }
 
         if (this.classes.length > 0) {
-            span = span || document.createElement("span");
+            span = span || {
+                children: [],
+                style: {},
+                name: "span",
+            };
             span.className = createClass(this.classes);
         }
 
         for (const style in this.style) {
             if (this.style.hasOwnProperty(style)) {
-                span = span || document.createElement("span");
-                // $FlowFixMe Flow doesn't seem to understand span.style's type.
+                span = span || {
+                    name: "span",
+                    children: [],
+                    style: {},
+                };
                 span.style[style] = this.style[style];
             }
         }
 
         if (span) {
-            span.appendChild(node);
+            node.children.push(node);
             return span;
         } else {
             return node;
@@ -480,32 +502,35 @@ export class SymbolNode implements HtmlDomNode {
  */
 export class SvgNode implements VirtualNode {
     children: SvgChildNode[];
-    attributes: {[string]: string};
+    attributes: { [string]: string };
 
-    constructor(children?: SvgChildNode[], attributes?: {[string]: string}) {
+    constructor(children?: SvgChildNode[], attributes?: { [string]: string }) {
         this.children = children || [];
         this.attributes = attributes || {};
     }
 
     toNode(): Node {
-        const svgNS = "http://www.w3.org/2000/svg";
-        const node = document.createElementNS(svgNS, "svg");
+        const node = {
+            name: "svg",
+            attributes: {
+                xmlns: "http://www.w3.org/2000/svg",
+                "xmlns:xlink": "http://www.w3.org/1999/xlink",
+            },
+            src: this.toMarkup(),
+        };
 
         // Apply attributes
         for (const attr in this.attributes) {
             if (Object.prototype.hasOwnProperty.call(this.attributes, attr)) {
-                node.setAttribute(attr, this.attributes[attr]);
+                node.attributes[attr] = this.attributes[attr];
             }
         }
 
-        for (let i = 0; i < this.children.length; i++) {
-            node.appendChild(this.children[i].toNode());
-        }
         return node;
     }
 
     toMarkup(): string {
-        let markup = "<svg";
+        let markup = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"`;
 
         // Apply attributes
         for (const attr in this.attributes) {
@@ -536,19 +561,6 @@ export class PathNode implements VirtualNode {
         this.alternate = alternate;  // Used only for \sqrt, \phase, & tall delims
     }
 
-    toNode(): Node {
-        const svgNS = "http://www.w3.org/2000/svg";
-        const node = document.createElementNS(svgNS, "path");
-
-        if (this.alternate) {
-            node.setAttribute("d", this.alternate);
-        } else {
-            node.setAttribute("d", path[this.pathName]);
-        }
-
-        return node;
-    }
-
     toMarkup(): string {
         if (this.alternate) {
             return `<path d='${this.alternate}'/>`;
@@ -559,24 +571,10 @@ export class PathNode implements VirtualNode {
 }
 
 export class LineNode implements VirtualNode {
-    attributes: {[string]: string};
+    attributes: { [string]: string };
 
-    constructor(attributes?: {[string]: string}) {
+    constructor(attributes?: { [string]: string }) {
         this.attributes = attributes || {};
-    }
-
-    toNode(): Node {
-        const svgNS = "http://www.w3.org/2000/svg";
-        const node = document.createElementNS(svgNS, "line");
-
-        // Apply attributes
-        for (const attr in this.attributes) {
-            if (Object.prototype.hasOwnProperty.call(this.attributes, attr)) {
-                node.setAttribute(attr, this.attributes[attr]);
-            }
-        }
-
-        return node;
     }
 
     toMarkup(): string {

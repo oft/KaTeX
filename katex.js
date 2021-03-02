@@ -8,28 +8,24 @@
  * errors in the expression, or errors in javascript handling.
  */
 
-import ParseError from "./src/ParseError";
-import Settings from "./src/Settings";
-
-import {buildTree, buildHTMLTree} from "./src/buildTree";
-import parseTree from "./src/parseTree";
 import buildCommon from "./src/buildCommon";
-import {
-    Span,
-    Anchor,
-    SymbolNode,
-    SvgNode,
-    PathNode,
-    LineNode,
-} from "./src/domTree";
-
-import type {SettingsOptions} from "./src/Settings";
-import type {AnyParseNode} from "./src/parseNode";
+import {buildHTMLTree} from "./src/buildTree";
 import type {DomSpan} from "./src/domTree";
-
-import {defineSymbol} from './src/symbols';
-import {defineMacro} from './src/macros';
+import {
+    Anchor,
+    LineNode, PathNode, Span,
+    SvgNode, SymbolNode,
+} from "./src/domTree";
 import {setFontMetrics} from './src/fontMetrics';
+import {defineMacro} from './src/macros';
+import ParseError from "./src/ParseError";
+import parseTree from "./src/parseTree";
+import type {SettingsOptions} from "./src/Settings";
+import Settings from "./src/Settings";
+import {defineSymbol} from './src/symbols';
+
+
+
 
 declare var __VERSION__: string;
 
@@ -37,51 +33,51 @@ declare var __VERSION__: string;
  * Parse and build an expression, and place that expression in the DOM node
  * given.
  */
-let render: (string, Node, SettingsOptions) => void = function(
-    expression: string,
-    baseNode: Node,
-    options: SettingsOptions,
-) {
-    baseNode.textContent = "";
-    const node = renderToDomTree(expression, options).toNode();
-    baseNode.appendChild(node);
-};
+// const render: (string, Node, SettingsOptions) => void = function (
+//     expression: string,
+//     baseNode: Node,
+//     options: SettingsOptions,
+// ) {
+//     baseNode.textContent = "";
+//     const node = renderToDomTree(expression, options).toNode();
+//     baseNode.appendChild(node);
+// };
 
 // KaTeX's styles don't work properly in quirks mode. Print out an error, and
 // disable rendering.
-if (typeof document !== "undefined") {
-    if (document.compatMode !== "CSS1Compat") {
-        typeof console !== "undefined" && console.warn(
-            "Warning: KaTeX doesn't work in quirks mode. Make sure your " +
-                "website has a suitable doctype.");
+// if (typeof document !== "undefined") {
+//     if (document.compatMode !== "CSS1Compat") {
+//         typeof console !== "undefined" && console.warn(
+//             "Warning: KaTeX doesn't work in quirks mode. Make sure your " +
+//             "website has a suitable doctype.");
 
-        render = function() {
-            throw new ParseError("KaTeX doesn't work in quirks mode.");
-        };
-    }
-}
+//         render = function () {
+//             throw new ParseError("KaTeX doesn't work in quirks mode.");
+//         };
+//     }
+// }
 
 /**
  * Parse and build an expression, and return the markup for that.
  */
-const renderToString = function(
-    expression: string,
-    options: SettingsOptions,
-): string {
-    const markup = renderToDomTree(expression, options).toMarkup();
-    return markup;
-};
+// const renderToString = function (
+//     expression: string,
+//     options: SettingsOptions,
+// ): string {
+//     const markup = renderToDomTree(expression, options).toMarkup();
+//     return markup;
+// };
 
 /**
  * Parse an expression and return the parse tree.
  */
-const generateParseTree = function(
-    expression: string,
-    options: SettingsOptions,
-): AnyParseNode[] {
-    const settings = new Settings(options);
-    return parseTree(expression, settings);
-};
+// const generateParseTree = function (
+//     expression: string,
+//     options: SettingsOptions,
+// ): AnyParseNode[] {
+//     const settings = new Settings(options);
+//     return parseTree(expression, settings);
+// };
 
 /**
  * If the given error is a KaTeX ParseError and options.throwOnError is false,
@@ -107,18 +103,18 @@ const renderError = function(
  * Generates and returns the katex build tree. This is used for advanced
  * use cases (like rendering to custom output).
  */
-const renderToDomTree = function(
-    expression: string,
-    options: SettingsOptions,
-): DomSpan {
-    const settings = new Settings(options);
-    try {
-        const tree = parseTree(expression, settings);
-        return buildTree(tree, expression, settings);
-    } catch (error) {
-        return renderError(error, expression, settings);
-    }
-};
+// const renderToDomTree = function (
+//     expression: string,
+//     options: SettingsOptions,
+// ): DomSpan {
+//     const settings = new Settings(options);
+//     try {
+//         const tree = parseTree(expression, settings);
+//         return buildTree(tree, expression, settings);
+//     } catch (error) {
+//         return renderError(error, expression, settings);
+//     }
+// };
 
 /**
  * Generates and returns the katex build tree, with just HTML (no MathML).
@@ -146,12 +142,12 @@ export default {
      * Renders the given LaTeX into an HTML+MathML combination, and adds
      * it as a child to the specified DOM node.
      */
-    render,
+    // render,
     /**
      * Renders the given LaTeX into an HTML+MathML combination string,
      * for sending to the client.
      */
-    renderToString,
+    // renderToString,
     /**
      * KaTeX error, usually during parsing.
      */
@@ -164,7 +160,7 @@ export default {
      * The internal tree representation is unstable and is very likely
      * to change. Use at your own risk.
      */
-    __parse: generateParseTree,
+    // __parse: generateParseTree,
     /**
      * Renders the given LaTeX into an HTML+MathML internal DOM tree
      * representation, without flattening that representation to a string.
@@ -173,7 +169,7 @@ export default {
      * The internal tree representation is unstable and is very likely
      * to change. Use at your own risk.
      */
-    __renderToDomTree: renderToDomTree,
+    // __renderToDomTree: renderToDomTree,
     /**
      * Renders the given LaTeX into an HTML internal DOM tree representation,
      * without MathML and without flattening that representation to a string.
